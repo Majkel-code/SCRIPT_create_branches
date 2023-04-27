@@ -16,13 +16,11 @@ class BranchCreator:
 		self.message = message
 
 	def checkout(self):
-		self.root.reset("HEAD")
-		print(self.root.branch('-a'))
 		remote_branches = []
 		for ref in self.root.branch('-a').split('\n'):
 			remote_branches.append(ref)
 		if self.on_branch in f"remotes/origin/{remote_branches}":
-			self.root.fetch(self.on_branch)
+			self.root.fetch("origin")
 			self.root.add(".")
 			self.root.branch(self.new_branch, self.on_branch)
 			self.root.checkout(self.new_branch)
@@ -30,10 +28,13 @@ class BranchCreator:
 		else:
 			print("Error")
 
+	def create_branches(self):
+		pass
+
 
 
 branch_creator = BranchCreator(cwd=r"D:\PROJECTS\LIBRARY_TEST",
-			  on_branch="Test_script_branch",
+			  on_branch="GUI-features",
 			  new_branch="Test_script_branch_two",
 			  message="Create test branch to check script")
 
