@@ -3,7 +3,7 @@ import git
 
 
 class BranchCreator:
-	def __init__(self, cwd, on_branch, new_branch):
+	def __init__(self, cwd, on_branch, new_branch, optional="regular"):
 		if not os.path.exists(cwd):
 			self.cwd = os.getcwd()
 		else:
@@ -11,6 +11,7 @@ class BranchCreator:
 		self.root = git.Git(self.cwd)
 		self.on_branch = on_branch
 		self.new_branch = new_branch
+		self.optional = optional
 		git.Repo(self.cwd).config_writer() \
 			.set_value(section="push", option="autoSetupRemote", value=True)
 		self.commitLogText = self.root.log(p=True)
@@ -34,15 +35,19 @@ class BranchCreator:
 		try:
 			self.root.fetch("origin")
 			self.root.add(".")
-			self.root.branch(self.new_branch, self.on_branch)
+			if self.optional == "regular":
+				self.root.branch(self.new_branch, self.on_branch)
+			elif self.optional == "dynamic":
+				self.root.branch(f"{self.new_branch}_dynamic",
+								 f"{self.on_branch}_dynamic")
 			self.root.checkout(self.new_branch)
-			self.root.push()
+			self.root.push(f"-u origin {self.new_branch}")
 		except:
 			print(self.commitLogText)
 
 
 branch_creator = BranchCreator(cwd=r"D:\PROJECTS\LIBRARY_TEST",
-							   on_branch="123",
+							   on_branch="GUI-Feature",
 							   new_branch="Test_branch_1_0_0")
 
 branch_creator.script_services()
