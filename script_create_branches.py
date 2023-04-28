@@ -1,48 +1,73 @@
 import os
+import time
+
 import git
+import sys
+
+def take_arguments():
+	dir_list = sys.argv[1].split(",")
+	on_branch = sys.argv[2]
+	new_branch = sys.argv[3]
+	try:
+		optional = sys.argv[4]
+	except:
+		optional = "regular"
+	return dir_list, on_branch, new_branch, optional
 
 
-class BranchCreator:
-	def __init__(self, cwd, on_branch, new_branch):
-		if not os.path.exists(cwd):
-			self.cwd = os.getcwd()
-		else:
-			self.cwd = cwd
-		self.root = git.Git(self.cwd)
-		self.on_branch = on_branch
-		self.new_branch = new_branch
-		git.Repo(self.cwd).config_writer() \
+def checkout(root_git, on_branch: str, new_branch: str, repo_dir):
+	remote_branches = []
+	for ref in root_git.branch('-a').split('\n'):
+		remote_branches.append(ref.strip())
+		print(remote_branches)
+	if on_branch not in remote_branches and on_branch in f"remotes/origin/{remote_branches}" and new_branch not in f"remotes/origin/{remote_branches}":
+		root_git.branch("-f",on_branch, f"origin/{on_branch}")
+		return True
+	elif on_branch in remote_branches and new_branch not in f"remotes/origin/{remote_branches}":
+		return True
+	elif on_branch not in f"remotes/origin/{remote_branches}":
+		return f"'{on_branch}' not in {remote_branches}\n on repository directory: {repo_dir}"
+	elif on_branch in f"remotes/origin/{remote_branches}" and new_branch in f"remotes/origin/{remote_branches}":
+		return f"existing {new_branch} on {remote_branches}"
+
+
+def create_branch(root_git, on_branch, new_branch, optional,repo_dir):
+	root_git.fetch(f"origin")
+	if optional == "regular":
+		root_git.branch(new_branch, on_branch)
+		root_git.checkout(new_branch)
+		root_git.push("origin", new_branch)
+		print(f"'{new_branch}' successfully created on '{on_branch}' in directory {repo_dir}")
+	elif optional == "dynamic":
+		root_git.branch(f"{new_branch}_dynamic",
+						f"{on_branch}_dynamic")
+		root_git.checkout(f"{new_branch}_dynamic")
+		root_git.push(f"-u origin {new_branch}_dynamic")
+		print(f"'{new_branch}_dynamic' successfully created on '{on_branch}_dynamic' in directory {repo_dir}")
+	else:
+		print(f"script have some problem to create new branch '{new_branch}' ")
+
+def script_services():
+	args = take_arguments()
+	dir_list = args[0]
+	on_branch = args[1]
+	new_branch = args[2]
+	optional = args[3]
+	for repo_dir in dir_list:
+		cwd = os.path.dirname(os.getcwd())
+		print(os.getcwd())
+		cwd = fr"{cwd}\{repo_dir}"
+		root_git = git.Git(cwd)
+		git.Repo(cwd).config_writer() \
 			.set_value(section="push", option="autoSetupRemote", value=True)
-		self.commitLogText = self.root.log(p=True)
-
-	def script_services(self):
-		if self.cwd and self.on_branch and self.new_branch:
-			if self.checkout():
-				print(self.commitLogText)
-
-	def checkout(self):
-		remote_branches = []
-		# for ref in self.root.branch('-a').split('\n'):
-		# 	remote_branches.append(ref)
-		if self.on_branch in self.root.branch('-a'):
-			print(self.root.branch('-a'))
-			self.create_branches()
-		else:
-			return f"'{self.on_branch}' branch not exist in branch list {remote_branches}"
-
-	def create_branches(self):
-		try:
-			self.root.fetch("origin")
-			self.root.add(".")
-			self.root.branch(self.new_branch, self.on_branch)
-			self.root.checkout(self.new_branch)
-			self.root.push()
-		except:
-			print(self.commitLogText)
+		print(on_branch)
+		print(new_branch)
+		make_checkout = checkout(root_git, on_branch, new_branch, repo_dir)
+		if make_checkout is True:
+			create_branch(root_git, on_branch, new_branch, optional, repo_dir)
+		elif make_checkout is False:
+			print(make_checkout)
+			continue
 
 
-branch_creator = BranchCreator(cwd=r"D:\PROJECTS\LIBRARY_TEST",
-							   on_branch="123",
-							   new_branch="Test_branch_1_0_0")
-
-branch_creator.script_services()
+script_services()
