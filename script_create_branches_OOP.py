@@ -36,13 +36,12 @@ class BranchCreator:
 
 	def create_branches(self):
 		# try:
-			self.root.fetch(f"origin {self.on_branch} --prune")
+			self.root.fetch(f"--all")
 			self.root.add(".")
 			if self.optional == "regular":
-				self.root.checkout(self.on_branch)
 				self.root.branch(self.new_branch, self.on_branch)
 				self.root.checkout(self.new_branch)
-				self.root.push(f"-u origin {self.new_branch}")
+				self.root.push(self.new_branch)
 			elif self.optional == "dynamic":
 				self.root.branch(f"{self.new_branch}_dynamic",
 								 f"{self.on_branch}_dynamic")
@@ -53,8 +52,8 @@ class BranchCreator:
 
 
 branch_creator = BranchCreator(
-	dir="LIBRARY_TEST",
-	on_branch="GUI-features",
-	new_branch="Test_branch_dynamic")
+	dir="Test_repo2",
+	on_branch="master",
+	new_branch="Test_branch_v1")
 
 branch_creator.script_services()
