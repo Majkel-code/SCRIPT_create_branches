@@ -4,20 +4,35 @@ import sys
 
 
 def take_arguments():
-	dir_list = sys.argv[1].split(",")
-	on_branch = sys.argv[2]
-	new_branch = sys.argv[3]
-	try:
-		optional = sys.argv[4]
-	except:
-		optional = "regular"
-	return dir_list, on_branch, new_branch, optional
+	arguments = sys.argv
+	print(arguments)
+	flags = {
+		"dir_list": "-dir",
+		"on_branch": "-on",
+		"new_branch": "-new"
+	}
+
+	for key in flags.keys():
+		if key == "dir_list":
+			globals()[f"{key}"] = arguments[arguments.index(flags[key]) + 1].split(",")
+		else:
+			globals()[f"{key}"] = arguments[arguments.index(flags[key])+1]
+		print(globals()[f"{key}"])
+	if "--dynamic" in arguments:
+		globals()["optional"] = "dynamic"
+	else:
+		globals()["optional"] = "regular"
+
+	return globals()["dir_list"], globals()["on_branch"],globals()["new_branch"], globals()["optional"]
 
 
 def checkout(root_git, on_branch: str, new_branch: str, repo_dir):
 	remote_branches = []
 	for ref in root_git.branch('-a').split('\n'):
-		remote_branches.append(ref.strip())
+		if "* " in ref:
+			remote_branches.append(ref.replace("* ", ""))
+		else:
+			remote_branches.append(ref.strip())
 	print(remote_branches)
 	if on_branch not in remote_branches \
 		and on_branch in f"remotes/origin/{remote_branches}" \
@@ -40,6 +55,7 @@ def checkout(root_git, on_branch: str, new_branch: str, repo_dir):
 
 
 def create_branch(root_git, on_branch, new_branch, optional, repo_dir):
+
 	root_git.fetch()
 	if optional == "regular":
 		root_git.branch(new_branch, on_branch)
@@ -67,8 +83,14 @@ def script_services():
 		print(f"I'm start working on this repo directory: {repo_dir}")
 		cwd = fr"{cwd}\{repo_dir}"
 		root_git = git.Git(cwd)
-		git.Repo(cwd).config_writer() \
-			.set_value(section="push", option="autoSetupRemote", value=True)
+		try:
+			git.Repo(cwd).config_writer() \
+				.set_value(section="push", option="autoSetupRemote", value=True)
+		except:
+			print(
+				f"ERROR: Unable to change GIT configuration file in directory: {cwd}, "
+				f"Please check directory and try again.")
+			continue
 		print(f"Take PRIMARY branch: {on_branch}")
 		print(f"Take NEW branch: {new_branch}")
 		make_checkout = checkout(root_git, on_branch, new_branch, repo_dir)
