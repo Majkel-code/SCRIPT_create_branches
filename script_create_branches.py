@@ -1,7 +1,9 @@
 import os
 import git
 import sys
+import platform
 
+print(platform.system())
 
 def take_arguments():
 	arguments = sys.argv
@@ -11,20 +13,34 @@ def take_arguments():
 		"on_branch": "-on",
 		"new_branch": "-new"
 	}
-
-	for key in flags.keys():
-		if key == "dir_list":
-			globals()[f"{key}"] = arguments[arguments.index(flags[key]) + 1].split(",")
+	if platform.system() == "Windows":
+		for key in flags.keys():
+			if key == "dir_list":
+				globals()[f"{key}"] = arguments[arguments.index(flags[key]) + 1].split(",")
+			else:
+				globals()[f"{key}"] = arguments[arguments.index(flags[key])+1]
+			print(globals()[f"{key}"])
+		if "--dynamic" in arguments:
+			globals()["optional"] = "dynamic"
 		else:
-			globals()[f"{key}"] = arguments[arguments.index(flags[key])+1]
-		print(globals()[f"{key}"])
-	if "--dynamic" in arguments:
-		globals()["optional"] = "dynamic"
-	else:
-		globals()["optional"] = "regular"
+			globals()["optional"] = "regular"
 
-	return globals()["dir_list"], globals()["on_branch"],globals()["new_branch"], globals()["optional"]
+		return globals()["dir_list"], globals()["on_branch"], globals()["new_branch"], globals()["optional"]
 
+	elif platform.system() != "Windows":
+		for key in flags.keys():
+			if key == "dir_list":
+				directory_list = arguments[arguments.index(flags[key]) + 1].split(",")
+			elif key == "on_branch":
+				on_branch = arguments[arguments.index(flags[key]) + 1]
+			elif key == "new_branch":
+				new_branch = arguments[arguments.index(flags[key]) + 1]
+		if "--dynamic" in arguments:
+			optional = "dynamic"
+		else:
+			optional = "regular"
+
+		return directory_list, on_branch, new_branch, optional
 
 def checkout(root_git, on_branch: str, new_branch: str, repo_dir):
 	remote_branches = []
@@ -55,7 +71,6 @@ def checkout(root_git, on_branch: str, new_branch: str, repo_dir):
 
 
 def create_branch(root_git, on_branch, new_branch, optional, repo_dir):
-
 	root_git.fetch()
 	if optional == "regular":
 		root_git.branch(new_branch, on_branch)
